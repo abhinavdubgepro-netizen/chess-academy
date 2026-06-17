@@ -13,8 +13,6 @@ export async function POST(req: NextRequest) {
       message,
     });
 
-    // 👉 TODO: send email here (copy from demo)
-
     return NextResponse.json(
       { message: "Message sent successfully!" },
       { status: 201 }
@@ -26,5 +24,4 @@ export async function POST(req: NextRequest) {
       { status: 500 }
     );
   }
-}
 }
