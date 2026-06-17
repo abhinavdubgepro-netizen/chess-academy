@@ -13,6 +13,7 @@ export const demoRequestSchema = z.object({
 export const contactSchema = z.object({
   name: z.string().min(2, "Name is required"),
   email: z.string().email("Invalid email"),
+  phone: z.string().optional(), // ✅ ADD THIS LINE
   subject: z.string().min(3, "Subject is required"),
   message: z.string().min(10, "Message must be at least 10 characters"),
 });
