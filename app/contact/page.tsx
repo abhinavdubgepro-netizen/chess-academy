@@ -18,25 +18,31 @@ export default function ContactPage() {
   });
 
   const onSubmit = async (data: ContactInput) => {
-    setStatus("loading");
-    try {
-      const res = await fetch("/api/contact", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-      if (res.ok) {
-        setStatus("success");
-        reset();
-      } else {
-        setStatus("idle");
-        alert("Failed to send message");
-      }
-    } catch {
+  setStatus("loading");
+  try {
+    const res = await fetch("/api/send-email", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: data.name,
+        email: data.email,
+        phone: "",
+        message: `Subject: ${data.subject}\n\n${data.message}`,
+        type: "contact"
+      }),
+    });
+    if (res.ok) {
+      setStatus("success");
+      reset();
+    } else {
       setStatus("idle");
-      alert("Something went wrong");
+      alert("Failed to send message");
     }
-  };
+  } catch {
+    setStatus("idle");
+    alert("Something went wrong");
+  }
+};
 
   return (
     <div className="min-h-screen pt-24 pb-16 px-4">
