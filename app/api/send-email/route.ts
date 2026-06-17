@@ -27,14 +27,13 @@ export async function POST(req: Request) {
       </div>
     `;
 
-    await resend.emails.send({
-      from: 'Chess Academy <onboarding@resend.dev>',
-      to: process.env.OWNER_EMAIL!,
-      subject: subject,
-      html: html,
-      replyTo: email,
-    });
-
+   await resend.emails.send({
+  from: 'Chess Academy <onboarding@resend.dev>',
+  to: process.env.OWNER_EMAIL!,
+  subject: subject,
+  html: html,
+  reply_to: email,
+});
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Email error:', error);
