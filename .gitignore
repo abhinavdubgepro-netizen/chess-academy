@@ -1,0 +1,7 @@
+node_modules
+.next
+out
+build
+*.db
+*.db-journal
+.env*.local
