@@ -2,44 +2,47 @@ import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
 
-const DATA_FILE = path.join(process.cwd(), "submissions.json");
-
-function readSubmissions() {
-  if (!fs.existsSync(DATA_FILE)) return [];
-  const data = fs.readFileSync(DATA_FILE, "utf-8");
-  return data ? JSON.parse(data) : [];
-}
+const DATA_FILE = path.join(process.cwd(), "demo_requests.csv");
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const { name, email, phone, age, chessLevel, preferredDate, message } = body;
 
-    const submissions = readSubmissions();
-    const existing = submissions.find((s: any) => s.email === email);
-    
-    if (existing) {
-      return NextResponse.json(
-        { message: "You have already requested a demo with this email." },
-        { status: 409 }
-      );
+    // Check if email already exists
+    if (fs.existsSync(DATA_FILE)) {
+      const data = fs.readFileSync(DATA_FILE, "utf-8");
+      if (data.includes(`Email:,${email}`)) {
+        return NextResponse.json(
+          { message: "You have already requested a demo with this email." },
+          { status: 409 }
+        );
+      }
     }
 
-    const newSubmission = {
-      id: Date.now(),
-      name,
-      email,
-      phone: phone || "",
-      age: age || "",
-      chessLevel: chessLevel || "beginner",
-      preferredDate: preferredDate || "",
-      message: message || "",
-      status: "pending",
-      submittedAt: new Date().toLocaleString("en-IN"),
-    };
+    // Create file with header if it doesn't exist
+    if (!fs.existsSync(DATA_FILE)) {
+      fs.writeFileSync(DATA_FILE, "Chess Academy - Demo Requests\n\n");
+    }
 
-    submissions.push(newSubmission);
-    fs.writeFileSync(DATA_FILE, JSON.stringify(submissions, null, 2));
+    // Add new submission in vertical format
+    const submittedAt = new Date().toLocaleString("en-IN");
+    
+    const entry = [
+      "═══════════════════════════════════════",
+      `Name:,${name}`,
+      `Email:,${email}`,
+      `Phone:,${phone || "Not provided"}`,
+      `Age:,${age || "Not provided"}`,
+      `Chess Level:,${chessLevel || "beginner"}`,
+      `Preferred Date:,${preferredDate || "Not provided"}`,
+      `Message:,${message || "Not provided"}`,
+      `Submitted At:,${submittedAt}`,
+      "═══════════════════════════════════════",
+      "",
+    ].join("\n");
+
+    fs.appendFileSync(DATA_FILE, entry);
 
     return NextResponse.json(
       { message: "Demo request submitted successfully!" },
@@ -56,9 +59,12 @@ export async function POST(req: NextRequest) {
 
 export async function GET() {
   try {
-    const submissions = readSubmissions();
-    return NextResponse.json(submissions);
+    if (!fs.existsSync(DATA_FILE)) {
+      return NextResponse.json({ data: "No submissions yet." });
+    }
+    const data = fs.readFileSync(DATA_FILE, "utf-8");
+    return NextResponse.json({ data });
   } catch {
-    return NextResponse.json([], { status: 500 });
+    return NextResponse.json({ data: "" });
   }
 }

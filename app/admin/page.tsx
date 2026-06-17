@@ -3,19 +3,41 @@
 import { useState, useEffect } from "react";
 
 export default function AdminPage() {
-  const [demos, setDemos] = useState<any[]>([]);
-  const [contacts, setContacts] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState<"demos" | "contacts">("demos");
+  const [demoData, setDemoData] = useState("");
+  const [contactData, setContactData] = useState("");
 
   useEffect(() => {
     fetch("/api/demo-request")
       .then((res) => res.json())
-      .then((data) => setDemos(data));
+      .then((data) => setDemoData(data.data || ""));
 
     fetch("/api/contact")
       .then((res) => res.json())
-      .then((data) => setContacts(data));
+      .then((data) => setContactData(data.data || ""));
   }, []);
+
+  // Parse the vertical format into objects
+  const parseEntries = (text: string) => {
+    if (!text || text.includes("No submissions") || text.includes("No messages")) return [];
+    
+    const entries = text.split("═══════════════════════════════════════").filter(e => e.trim());
+    
+    return entries.map(entry => {
+      const lines = entry.trim().split("\n");
+      const obj: Record<string, string> = {};
+      lines.forEach(line => {
+        if (line.includes(":")) {
+          const [key, value] = line.split(":,");
+          if (key && value) obj[key.trim()] = value.trim();
+        }
+      });
+      return obj;
+    }).filter(e => Object.keys(e).length > 0);
+  };
+
+  const demoEntries = parseEntries(demoData);
+  const contactEntries = parseEntries(contactData);
 
   return (
     <div className="min-h-screen bg-[#1a1a2e] text-white p-8 pt-24">
@@ -26,76 +48,58 @@ export default function AdminPage() {
           onClick={() => setActiveTab("demos")}
           className={`px-4 py-2 rounded-lg ${activeTab === "demos" ? "bg-[#e94560]" : "bg-white/10"}`}
         >
-          Demo Requests ({demos.length})
+          Demo Requests ({demoEntries.length})
         </button>
         <button
           onClick={() => setActiveTab("contacts")}
           className={`px-4 py-2 rounded-lg ${activeTab === "contacts" ? "bg-[#e94560]" : "bg-white/10"}`}
         >
-          Contact Messages ({contacts.length})
+          Contact Messages ({contactEntries.length})
         </button>
       </div>
 
       {activeTab === "demos" && (
-        <div className="overflow-x-auto">
-          {demos.length === 0 ? (
+        <div>
+          {demoEntries.length === 0 ? (
             <p className="text-white/50">No demo requests yet.</p>
           ) : (
-            <table className="w-full text-left">
-              <thead>
-                <tr className="border-b border-white/10 text-white/60">
-                  <th className="py-3 px-2">Name</th>
-                  <th className="py-3 px-2">Email</th>
-                  <th className="py-3 px-2">Phone</th>
-                  <th className="py-3 px-2">Level</th>
-                  <th className="py-3 px-2">Date</th>
-                  <th className="py-3 px-2">Submitted</th>
-                </tr>
-              </thead>
-              <tbody>
-                {demos.map((demo) => (
-                  <tr key={demo.id} className="border-b border-white/5 hover:bg-white/5">
-                    <td className="py-3 px-2">{demo.name}</td>
-                    <td className="py-3 px-2 text-[#f5a623]">{demo.email}</td>
-                    <td className="py-3 px-2">{demo.phone || "-"}</td>
-                    <td className="py-3 px-2 capitalize">{demo.chessLevel}</td>
-                    <td className="py-3 px-2">{demo.preferredDate || "-"}</td>
-                    <td className="py-3 px-2 text-white/50 text-sm">{demo.submittedAt}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <div className="space-y-4">
+              {demoEntries.map((entry, i) => (
+                <div key={i} className="bg-white/5 border border-white/10 rounded-xl p-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {Object.entries(entry).map(([key, value]) => (
+                      <div key={key} className="flex flex-col">
+                        <span className="text-[#f5a623] text-sm font-medium">{key}</span>
+                        <span className="text-white">{value}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
           )}
         </div>
       )}
 
       {activeTab === "contacts" && (
-        <div className="overflow-x-auto">
-          {contacts.length === 0 ? (
+        <div>
+          {contactEntries.length === 0 ? (
             <p className="text-white/50">No contact messages yet.</p>
           ) : (
-            <table className="w-full text-left">
-              <thead>
-                <tr className="border-b border-white/10 text-white/60">
-                  <th className="py-3 px-2">Name</th>
-                  <th className="py-3 px-2">Email</th>
-                  <th className="py-3 px-2">Subject</th>
-                  <th className="py-3 px-2">Message</th>
-                  <th className="py-3 px-2">Submitted</th>
-                </tr>
-              </thead>
-              <tbody>
-                {contacts.map((contact) => (
-                  <tr key={contact.id} className="border-b border-white/5 hover:bg-white/5">
-                    <td className="py-3 px-2">{contact.name}</td>
-                    <td className="py-3 px-2 text-[#f5a623]">{contact.email}</td>
-                    <td className="py-3 px-2">{contact.subject}</td>
-                    <td className="py-3 px-2 max-w-xs truncate">{contact.message}</td>
-                    <td className="py-3 px-2 text-white/50 text-sm">{contact.submittedAt}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <div className="space-y-4">
+              {contactEntries.map((entry, i) => (
+                <div key={i} className="bg-white/5 border border-white/10 rounded-xl p-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {Object.entries(entry).map(([key, value]) => (
+                      <div key={key} className="flex flex-col">
+                        <span className="text-[#f5a623] text-sm font-medium">{key}</span>
+                        <span className="text-white">{value}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
           )}
         </div>
       )}

@@ -2,38 +2,40 @@ import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
 
-const CONTACT_FILE = path.join(process.cwd(), "contacts.json");
-
-function readContacts() {
-  if (!fs.existsSync(CONTACT_FILE)) return [];
-  const data = fs.readFileSync(CONTACT_FILE, "utf-8");
-  return data ? JSON.parse(data) : [];
-}
+const DATA_FILE = path.join(process.cwd(), "contact_messages.csv");
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const { name, email, subject, message } = body;
 
-    const contacts = readContacts();
-    
-    const newContact = {
-      id: Date.now(),
-      name,
-      email,
-      subject,
-      message,
-      submittedAt: new Date().toLocaleString("en-IN"),
-    };
+    // Create file with header if it doesn't exist
+    if (!fs.existsSync(DATA_FILE)) {
+      fs.writeFileSync(DATA_FILE, "Chess Academy - Contact Messages\n\n");
+    }
 
-    contacts.push(newContact);
-    fs.writeFileSync(CONTACT_FILE, JSON.stringify(contacts, null, 2));
+    // Add new submission in vertical format
+    const submittedAt = new Date().toLocaleString("en-IN");
+    
+    const entry = [
+      "═══════════════════════════════════════",
+      `Name:,${name}`,
+      `Email:,${email}`,
+      `Subject:,${subject}`,
+      `Message:,${message}`,
+      `Submitted At:,${submittedAt}`,
+      "═══════════════════════════════════════",
+      "",
+    ].join("\n");
+
+    fs.appendFileSync(DATA_FILE, entry);
 
     return NextResponse.json(
       { message: "Message sent successfully!" },
       { status: 201 }
     );
-  } catch {
+  } catch (error) {
+    console.error("Error:", error);
     return NextResponse.json(
       { message: "Something went wrong" },
       { status: 500 }
@@ -43,9 +45,12 @@ export async function POST(req: NextRequest) {
 
 export async function GET() {
   try {
-    const contacts = readContacts();
-    return NextResponse.json(contacts);
+    if (!fs.existsSync(DATA_FILE)) {
+      return NextResponse.json({ data: "No messages yet." });
+    }
+    const data = fs.readFileSync(DATA_FILE, "utf-8");
+    return NextResponse.json({ data });
   } catch {
-    return NextResponse.json([], { status: 500 });
+    return NextResponse.json({ data: "" });
   }
 }
