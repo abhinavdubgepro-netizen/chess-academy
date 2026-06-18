@@ -15,7 +15,7 @@ export default function DemoPage() {
     email: "",
     phone: "",
     age: "",
-    chessLevel: "beginner",
+    classType: "1-on-1", // Changed from chessLevel
     preferredDate: "",
     message: "",
   });
@@ -38,13 +38,12 @@ export default function DemoPage() {
           email: formData.email,
           phone: formData.phone,
           age: formData.age,
-          chessLevel: formData.chessLevel,
+          classType: formData.classType, // Changed from chessLevel
           preferredDate: formData.preferredDate,
           message: formData.message,
         }),
       });
 
-      // Get the response body even if not OK
       let data;
       try {
         data = await res.json();
@@ -85,7 +84,7 @@ export default function DemoPage() {
               <CheckCircle className="w-16 h-16 text-green-400 mx-auto mb-4" />
               <h3 className="text-xl font-semibold text-white mb-2">Request Submitted!</h3>
               <p className="text-white/60 mb-6">We will contact you within 24 hours.</p>
-              <Button onClick={() => { setStatus("idle"); setFormData({ name: "", email: "", phone: "", age: "", chessLevel: "beginner", preferredDate: "", message: "" }); }} variant="outline">Submit Another</Button>
+              <Button onClick={() => { setStatus("idle"); setFormData({ name: "", email: "", phone: "", age: "", classType: "1-on-1", preferredDate: "", message: "" }); }} variant="outline">Submit Another</Button>
             </div>
           ) : status === "already-exists" ? (
             <div className="text-center py-8">
@@ -119,11 +118,10 @@ export default function DemoPage() {
                 </div>
               </div>
               <div>
-                <label className="block text-sm text-white/80 mb-1">Chess Level</label>
-                <Select name="chessLevel" value={formData.chessLevel} onChange={handleChange}>
-                  <option value="beginner">Beginner</option>
-                  <option value="intermediate">Intermediate</option>
-                  <option value="advanced">Advanced</option>
+                <label className="block text-sm text-white/80 mb-1">Class Type</label>
+                <Select name="classType" value={formData.classType} onChange={handleChange}>
+                  <option value="1-on-1">1-on-1 Personal Training</option>
+                  <option value="group">Group Classes</option>
                 </Select>
               </div>
               <div>
