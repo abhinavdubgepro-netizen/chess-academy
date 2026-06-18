@@ -23,32 +23,40 @@ export default function DemoPage() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-const onSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setStatus("loading");
-  try {
-    const res = await fetch("/api/send-email", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name: formData.name,
-        email: formData.email,
-        phone: formData.phone,
-        message: `Age: ${formData.age}\nChess Level: ${formData.chessLevel}\nPreferred Date: ${formData.preferredDate}\n\n${formData.message}`,
-        type: "demo"
-      }),
-    });
-    if (res.ok) {
-      setStatus("success");
-    } else {
+  const onSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setStatus("loading");
+    try {
+      const res = await fetch("/api/demo-request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone,
+          age: formData.age,
+          chessLevel: formData.chessLevel,
+          preferredDate: formData.preferredDate,
+          message: formData.message,
+        }),
+      });
+
+      if (res.status === 409) {
+        setStatus("already-exists");
+        return;
+      }
+
+      if (res.ok) {
+        setStatus("success");
+      } else {
+        setStatus("idle");
+        alert("Failed to submit. Please try again.");
+      }
+    } catch {
       setStatus("idle");
       alert("Failed to submit. Please try again.");
     }
-  } catch {
-    setStatus("idle");
-    alert("Failed to submit. Please try again.");
-  }
-};
+  };
 
   return (
     <div className="min-h-screen pt-24 pb-16 px-4">
