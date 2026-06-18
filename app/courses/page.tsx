@@ -7,7 +7,7 @@ import { BookOpen, Clock, BarChart, X, Copy, CheckCircle } from "lucide-react";
 
 export default function CoursesPage() {
   const [loading, setLoading] = useState<string | null>(null);
-  const [paymentModal, setPaymentModal] = useState<<{
+  const [paymentModal, setPaymentModal] = useState<{
     show: boolean;
     courseId: string;
     title: string;
