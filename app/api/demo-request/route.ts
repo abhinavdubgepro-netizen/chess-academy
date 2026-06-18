@@ -9,7 +9,7 @@ const demoEmails = new Set<string>();
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { name, email, phone, age, chessLevel, preferredDate, message } = body;
+    const { name, email, phone, age, classtype, preferredDate, message } = body;
 
     if (!email || !email.includes("@")) {
       return NextResponse.json({ message: "Valid email required" }, { status: 400 });
@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
         <p><strong>Email:</strong> ${normalizedEmail}</p>
         <p><strong>Phone:</strong> ${phone || "N/A"}</p>
         <p><strong>Age:</strong> ${age || "N/A"}</p>
-        <p><strong>Level:</strong> ${chessLevel}</p>
+        <p><strong>Chess Type:</strong> ${ChessType}</p>
         <p><strong>Date:</strong> ${preferredDate || "N/A"}</p>
         <p><strong>Message:</strong> ${message || "N/A"}</p>
       `,
