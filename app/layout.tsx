@@ -37,6 +37,8 @@ function Navbar() {
           </Link>
           <div className="hidden md:flex items-center gap-6">
             <Link href="/" className="text-sm text-white/70 hover:text-[#f5a623] transition-colors">Home</Link>
+            <Link href="/courses" className="text-sm text-white/70 hover:text-[#f5a623] transition-colors">Courses</Link>
+            <Link href="/my-courses" className="text-sm text-white/70 hover:text-[#f5a623] transition-colors">My Courses</Link>
             <Link href="/classes" className="text-sm text-white/70 hover:text-[#f5a623] transition-colors">Classes</Link>
             <Link href="/demo" className="text-sm text-white/70 hover:text-[#f5a623] transition-colors">Free Demo</Link>
             <Link href="/contact" className="text-sm text-white/70 hover:text-[#f5a623] transition-colors">Contact</Link>
