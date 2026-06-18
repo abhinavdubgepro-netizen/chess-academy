@@ -8,7 +8,7 @@ import Providers from "./providers";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Chess Academy - Learn Chess Online",
+  title: "Fusion Chess Academy - Learn Chess Online",
   description: "Online chess classes for all levels. Book your free demo class today!",
 };
 
@@ -33,7 +33,7 @@ function Navbar() {
         <div className="flex items-center justify-between h-16">
           <Link href="/" className="flex items-center gap-2">
             <Crown className="w-7 h-7 text-[#f5a623]" />
-            <span className="text-lg font-bold">Chess<span className="text-[#f5a623]">Academy</span></span>
+            <span className="text-lg font-bold">Fusion<span className="text-[#f5a623]">Chess Academy</span></span>
           </Link>
           <div className="hidden md:flex items-center gap-6">
             <Link href="/" className="text-sm text-white/70 hover:text-[#f5a623] transition-colors">Home</Link>
@@ -56,7 +56,7 @@ function Footer() {
   return (
     <footer className="bg-[#16213e] border-t border-white/10 py-8">
       <div className="max-w-6xl mx-auto px-4 text-center">
-        <p className="text-white/40 text-sm">&copy; {new Date().getFullYear()} Chess Academy. All rights reserved.</p>
+        <p className="text-white/40 text-sm">&copy; {new Date().getFullYear()}  Fusion Chess Academy. All rights reserved.</p>
       </div>
     </footer>
   );
