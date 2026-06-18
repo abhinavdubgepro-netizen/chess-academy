@@ -8,7 +8,8 @@ import { Textarea } from "@/components/ui/Textarea";
 import { CheckCircle, AlertCircle } from "lucide-react";
 
 export default function DemoPage() {
-  const [status, setStatus] = useState<"idle" | "loading" | "success" | "already-exists">("idle");
+  const [status, setStatus] = useState<"idle" | "loading" | "success" | "already-exists" | "error">("idle");
+  const [errorMsg, setErrorMsg] = useState("");
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -26,6 +27,8 @@ export default function DemoPage() {
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setStatus("loading");
+    setErrorMsg("");
+    
     try {
       const res = await fetch("/api/demo-request", {
         method: "POST",
@@ -41,20 +44,30 @@ export default function DemoPage() {
         }),
       });
 
+      // Get the response body even if not OK
+      let data;
+      try {
+        data = await res.json();
+      } catch {
+        data = { message: `Server returned ${res.status}` };
+      }
+
       if (res.status === 409) {
         setStatus("already-exists");
         return;
       }
 
-      if (res.ok) {
-        setStatus("success");
-      } else {
-        setStatus("idle");
-        alert("Failed to submit. Please try again.");
+      if (!res.ok) {
+        setStatus("error");
+        setErrorMsg(data.message || `Error ${res.status}: Something went wrong`);
+        return;
       }
-    } catch {
-      setStatus("idle");
-      alert("Failed to submit. Please try again.");
+
+      setStatus("success");
+
+    } catch (err) {
+      setStatus("error");
+      setErrorMsg("Network error. Check your connection.");
     }
   };
 
@@ -82,6 +95,11 @@ export default function DemoPage() {
             </div>
           ) : (
             <form onSubmit={onSubmit} className="space-y-4">
+              {status === "error" && (
+                <div className="bg-red-500/20 border border-red-500/50 rounded-lg p-3 text-red-300 text-sm">
+                  {errorMsg}
+                </div>
+              )}
               <div>
                 <label className="block text-sm text-white/80 mb-1">Full Name *</label>
                 <Input name="name" value={formData.name} onChange={handleChange} placeholder="Your name" required />
