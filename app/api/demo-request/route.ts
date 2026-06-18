@@ -12,45 +12,29 @@ export async function POST(req: NextRequest) {
     const { name, email, phone, age, chessLevel, preferredDate, message } = body;
 
     if (!email || !email.includes("@")) {
-      return NextResponse.json(
-        { message: "Valid email is required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ message: "Valid email required" }, { status: 400 });
     }
 
     const normalizedEmail = email.toLowerCase().trim();
-
-    // Check Redis if email already requested demo
     const key = `demo:${normalizedEmail}`;
+
+    // Check Redis
+    console.log("Checking Redis for key:", key);
     const existing = await redis.get(key);
+    console.log("Redis result:", existing);
 
     if (existing === "true") {
+      console.log("Duplicate found for:", normalizedEmail);
       return NextResponse.json(
         { message: "You have already requested a demo with this email." },
         { status: 409 }
       );
     }
 
-    // Save to Redis (persists forever)
+    // Save to Redis
+    console.log("Saving to Redis:", key);
     await redis.set(key, "true");
-
-    // Also save to Google Sheets (optional backup)
-    try {
-      await fetch("https://script.google.com/macros/s/AKfycbw14cV-X6Sulkh7HeZAEVEpq78OAsSZevrOJNeiRCLbm0vU1qoTIZCjh8A9k_lBZPBceQ/exec", {
-        method: "POST",
-        body: JSON.stringify({
-          name,
-          email: normalizedEmail,
-          phone,
-          age,
-          level: chessLevel,
-          date: preferredDate,
-          message,
-        }),
-      });
-    } catch (sheetError) {
-      console.error("Google Sheet backup failed:", sheetError);
-    }
+    console.log("Saved successfully");
 
     return NextResponse.json(
       { message: "Demo request submitted successfully!" },
@@ -58,7 +42,7 @@ export async function POST(req: NextRequest) {
     );
 
   } catch (error) {
-    console.error("Error:", error);
+    console.error("API Error:", error);
     return NextResponse.json(
       { message: "Something went wrong" },
       { status: 500 }
