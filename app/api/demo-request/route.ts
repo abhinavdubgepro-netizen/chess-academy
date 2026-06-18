@@ -3,7 +3,7 @@ import { Resend } from "resend";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-// In-memory store for demo emails
+// In-memory store for demo emails (resets on server restart)
 const demoEmails = new Set<string>();
 
 export async function POST(req: NextRequest) {
@@ -28,29 +28,33 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Send email via Resend
-    try {
-      await resend.emails.send({
-        from: "Chess Academy <onboarding@resend.dev>",
-        to: "your-email@example.com", // ← YOUR EMAIL WHERE YOU WANT NOTIFICATIONS
-        subject: `New Demo Request from ${name}`,
-        html: `
-          <h2>New Demo Request</h2>
-          <p><strong>Name:</strong> ${name}</p>
-          <p><strong>Email:</strong> ${normalizedEmail}</p>
-          <p><strong>Phone:</strong> ${phone || "N/A"}</p>
-          <p><strong>Age:</strong> ${age || "N/A"}</p>
-          <p><strong>Level:</strong> ${chessLevel}</p>
-          <p><strong>Date:</strong> ${preferredDate || "N/A"}</p>
-          <p><strong>Message:</strong> ${message || "N/A"}</p>
-        `,
-      });
-      console.log("Email sent successfully");
-    } catch (emailError) {
-      console.error("Email failed:", emailError);
+    // Send email via Resend (same as contact API)
+    const response = await resend.emails.send({
+      from: "onboarding@resend.dev",
+      to: "yourgmail@gmail.com", // ← CHANGE TO YOUR EMAIL
+      subject: `New Demo Request from ${name}`,
+      html: `
+        <h2>New Demo Request</h2>
+        <p><strong>Name:</strong> ${name}</p>
+        <p><strong>Email:</strong> ${normalizedEmail}</p>
+        <p><strong>Phone:</strong> ${phone || "N/A"}</p>
+        <p><strong>Age:</strong> ${age || "N/A"}</p>
+        <p><strong>Level:</strong> ${chessLevel}</p>
+        <p><strong>Preferred Date:</strong> ${preferredDate || "N/A"}</p>
+        <p><strong>Message:</strong> ${message || "N/A"}</p>
+      `,
+    });
+
+    // Check if email actually sent
+    if (response.error) {
+      console.error("Email error:", response.error);
+      return NextResponse.json(
+        { message: "Email failed to send" },
+        { status: 500 }
+      );
     }
 
-    // Mark as used
+    // Mark email as used
     demoEmails.add(normalizedEmail);
 
     return NextResponse.json(
@@ -59,7 +63,7 @@ export async function POST(req: NextRequest) {
     );
 
   } catch (error) {
-    console.error("Error:", error);
+    console.error("Server error:", error);
     return NextResponse.json(
       { message: "Something went wrong" },
       { status: 500 }
