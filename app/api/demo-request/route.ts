@@ -25,12 +25,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Mark email as used
-    demoEmails.add(normalizedEmail);
-
     // Send to Google Sheets
     const response = await fetch("https://script.google.com/macros/s/AKfycbw14cV-X6Sulkh7HeZAEVEpq78OAsSZevrOJNeiRCLbm0vU1qoTIZCjh8A9k_lBZPBceQ/exec", {
       method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify({
         name,
         email: normalizedEmail,
@@ -42,24 +42,44 @@ export async function POST(req: NextRequest) {
       }),
     });
 
-    // Handle non-JSON responses from Apps Script
+    // Get response text
     const text = await response.text();
-    let data;
+    console.log("Apps Script response:", text.substring(0, 200));
+
+    // Try to parse JSON
+    let data: { success?: boolean } = {};
     try {
       data = JSON.parse(text);
     } catch {
-      // If Apps Script doesn't return JSON, assume success if HTTP 200
+      // If not JSON, check if it's an error page
+      if (text.includes("error") || text.includes("Error")) {
+        return NextResponse.json(
+          { message: "Google Sheets returned an error" },
+          { status: 502 }
+        );
+      }
+      // Otherwise assume success if HTTP status is OK
       data = { success: response.ok };
     }
 
-    if (!data.success && response.ok === false) {
-      // Remove from set if Google Sheets failed
-      demoEmails.delete(normalizedEmail);
+    // If Apps Script explicitly says failure
+    if (data.success === false) {
+      return NextResponse.json(
+        { message: "You have already requested a demo with this email." },
+        { status: 409 }
+      );
+    }
+
+    // If HTTP failed and we couldn't parse success
+    if (!response.ok && data.success !== true) {
       return NextResponse.json(
         { message: "Failed to save request. Please try again." },
         { status: 502 }
       );
     }
+
+    // Only mark email as used AFTER successful save
+    demoEmails.add(normalizedEmail);
 
     return NextResponse.json(
       { message: "Demo request submitted successfully!" },
