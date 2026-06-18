@@ -33,7 +33,7 @@ function Navbar() {
         <div className="flex items-center justify-between h-16">
           <Link href="/" className="flex items-center gap-2">
             <Crown className="w-7 h-7 text-[#f5a623]" />
-            <span className="text-lg font-bold">Fusion<span className="text-[#f5a623]">Chess Academy</span></span>
+            <span className="text-lg font-bold">Fusion <span className="text-[#f5a623]">Chess Academy</span></span>
           </Link>
           <div className="hidden md:flex items-center gap-6">
             <Link href="/" className="text-sm text-white/70 hover:text-[#f5a623] transition-colors">Home</Link>
