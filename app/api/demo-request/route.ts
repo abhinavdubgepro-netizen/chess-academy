@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Redis } from "@upstash/redis";
+import { Resend } from "resend";
 
-const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_REST_URL!,
-  token: process.env.UPSTASH_REDIS_REST_TOKEN!,
-});
+const resend = new Resend(process.env.RESEND_API_KEY);
+
+// In-memory store for demo emails
+const demoEmails = new Set<string>();
 
 export async function POST(req: NextRequest) {
   try {
@@ -19,48 +19,39 @@ export async function POST(req: NextRequest) {
     }
 
     const normalizedEmail = email.toLowerCase().trim();
-    const key = `demo:${normalizedEmail}`;
 
-    // Check Redis if email already requested demo
-    const existing = await redis.get(key);
-
-    if (existing === "true") {
+    // Check duplicate
+    if (demoEmails.has(normalizedEmail)) {
       return NextResponse.json(
         { message: "You have already requested a demo with this email." },
         { status: 409 }
       );
     }
 
-    // Save to Redis (persists forever)
-    await redis.set(key, "true");
-
-    // ALSO send email notification (this was missing!)
+    // Send email via Resend
     try {
-      await fetch("https://script.google.com/macros/s/AKfycbw14cV-X6Sulkh7HeZAEVEpq78OAsSZevrOJNeiRCLbm0vU1qoTIZCjh8A9k_lBZPBceQ/exec", {
-        method: "POST",
-        body: JSON.stringify({
-          name,
-          email: normalizedEmail,
-          phone,
-          age,
-          level: chessLevel,
-          date: preferredDate,
-          message,
-        }),
+      await resend.emails.send({
+        from: "Chess Academy <onboarding@resend.dev>",
+        to: "your-email@example.com", // ← YOUR EMAIL WHERE YOU WANT NOTIFICATIONS
+        subject: `New Demo Request from ${name}`,
+        html: `
+          <h2>New Demo Request</h2>
+          <p><strong>Name:</strong> ${name}</p>
+          <p><strong>Email:</strong> ${normalizedEmail}</p>
+          <p><strong>Phone:</strong> ${phone || "N/A"}</p>
+          <p><strong>Age:</strong> ${age || "N/A"}</p>
+          <p><strong>Level:</strong> ${chessLevel}</p>
+          <p><strong>Date:</strong> ${preferredDate || "N/A"}</p>
+          <p><strong>Message:</strong> ${message || "N/A"}</p>
+        `,
       });
-    } catch (sheetError) {
-      console.error("Google Sheet backup failed:", sheetError);
-      // Don't fail if email fails, but log it
+      console.log("Email sent successfully");
+    } catch (emailError) {
+      console.error("Email failed:", emailError);
     }
 
-    // ALSO send to your email service (Resend/SendGrid/etc)
-    // If you have a separate email API, call it here too
-    try {
-      // If you have another email endpoint, add it here
-      // await fetch("/api/send-email", { ... });
-    } catch (emailError) {
-      console.error("Email send failed:", emailError);
-    }
+    // Mark as used
+    demoEmails.add(normalizedEmail);
 
     return NextResponse.json(
       { message: "Demo request submitted successfully!" },
