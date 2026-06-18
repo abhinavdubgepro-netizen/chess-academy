@@ -14,7 +14,7 @@ export const courses: Course[] = [
     id: "chess-beginner",
     title: "Chess Fundamentals",
     description: "Learn piece movement, basic tactics, and opening principles. Perfect for complete beginners.",
-    price: 1,
+    price: 499,
     level: "beginner",
     duration: "4 weeks",
     lessons: 12,
