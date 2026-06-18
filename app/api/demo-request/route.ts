@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 
-// In-memory store for demo emails (resets on server restart)
 const demoEmails = new Set<string>();
 
 export async function POST(req: NextRequest) {
@@ -17,7 +16,6 @@ export async function POST(req: NextRequest) {
 
     const normalizedEmail = email.toLowerCase().trim();
 
-    // Check if email already requested a demo
     if (demoEmails.has(normalizedEmail)) {
       return NextResponse.json(
         { message: "You have already requested a demo with this email." },
@@ -28,9 +26,7 @@ export async function POST(req: NextRequest) {
     // Send to Google Sheets
     const response = await fetch("https://script.google.com/macros/s/AKfycbw14cV-X6Sulkh7HeZAEVEpq78OAsSZevrOJNeiRCLbm0vU1qoTIZCjh8A9k_lBZPBceQ/exec", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         name,
         email: normalizedEmail,
@@ -42,27 +38,23 @@ export async function POST(req: NextRequest) {
       }),
     });
 
-    // Get response text
     const text = await response.text();
-    console.log("Apps Script response:", text.substring(0, 200));
 
-    // Try to parse JSON
+    // If response is not JSON (like an error page), handle it
     let data: { success?: boolean } = {};
     try {
       data = JSON.parse(text);
     } catch {
-      // If not JSON, check if it's an error page
-      if (text.includes("error") || text.includes("Error")) {
+      // Not valid JSON - check if it's an error page
+      if (text.includes("<!DOCTYPE") || text.includes("<html")) {
         return NextResponse.json(
-          { message: "Google Sheets returned an error" },
+          { message: "Google Apps Script returned HTML instead of JSON. Check your script deployment." },
           { status: 502 }
         );
       }
-      // Otherwise assume success if HTTP status is OK
       data = { success: response.ok };
     }
 
-    // If Apps Script explicitly says failure
     if (data.success === false) {
       return NextResponse.json(
         { message: "You have already requested a demo with this email." },
@@ -70,15 +62,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // If HTTP failed and we couldn't parse success
-    if (!response.ok && data.success !== true) {
+    if (!response.ok) {
       return NextResponse.json(
-        { message: "Failed to save request. Please try again." },
+        { message: `Google Sheets returned HTTP ${response.status}` },
         { status: 502 }
       );
     }
 
-    // Only mark email as used AFTER successful save
     demoEmails.add(normalizedEmail);
 
     return NextResponse.json(
@@ -89,7 +79,7 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     console.error("Error:", error);
     return NextResponse.json(
-      { message: "Something went wrong" },
+      { message: `Server error: ${error instanceof Error ? error.message : "Unknown error"}` },
       { status: 500 }
     );
   }
