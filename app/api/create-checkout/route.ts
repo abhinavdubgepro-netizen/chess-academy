@@ -1,30 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
 
-// For now, use a simple in-memory store (replace with Stripe later)
-const pendingOrders = new Map<string, { courseId: string; price: number }>();
-
 export async function POST(req: NextRequest) {
   try {
     const { courseId, price } = await req.json();
 
-    // Generate a unique order ID
-    const orderId = `order_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    // Validate
+    if (!courseId || !price) {
+      return NextResponse.json(
+        { message: "Course ID and price required" },
+        { status: 400 }
+      );
+    }
 
-    // Store order info
-    pendingOrders.set(orderId, { courseId, price });
-
-    // For now, return a simple UPI payment link
-    // Replace this with Stripe/Razorpay later
-    const upiId = "yourupi@okaxis"; // CHANGE THIS TO YOUR UPI ID
-
-    // Create UPI deep link
-    const upiLink = `upi://pay?pa=${upiId}&pn=Chess Academy&am=${price}&cu=INR&tn=Course: ${courseId}`;
-
+    // For now, return payment info (replace with Stripe/Razorpay later)
     return NextResponse.json({
-      url: upiLink,
-      orderId,
-      // Also show QR code data for desktop users
-      qrData: `upi://pay?pa=${upiId}&pn=Chess Academy&am=${price}&cu=INR`,
+      success: true,
+      courseId,
+      price,
+      // UPI ID for payment
+      upiId: "yourupi@okaxis", // CHANGE THIS TO YOUR REAL UPI ID
+      // QR code data for desktop users
+      upiLink: `upi://pay?pa=yourupi@okaxis&pn=Chess Academy&am=${price}&cu=INR&tn=Course: ${courseId}`,
     });
 
   } catch (error) {
