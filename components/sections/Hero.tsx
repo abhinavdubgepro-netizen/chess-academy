@@ -71,9 +71,9 @@ export default function Hero() {
           className="mt-20 grid grid-cols-2 md:grid-cols-4 gap-8"
         >
           {[
-            { value: "500+", label: "Students Trained" },
-            { value: "8+ Years", label: "Teaching Experience" },
-            { value: "3", label: "Batches Running" },
+            { value: "200+", label: "Students Trained" },
+            { value: "10+ Years", label: "Teaching Experience" },
+            { value: "2", label: "Batches Running" },
             { value: "100%", label: "Satisfaction" },
           ].map((stat, i) => (
             <motion.div
