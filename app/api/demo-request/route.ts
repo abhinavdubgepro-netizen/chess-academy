@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
         <p><strong>Email:</strong> ${normalizedEmail}</p>
         <p><strong>Phone:</strong> ${phone || "N/A"}</p>
         <p><strong>Age:</strong> ${age || "N/A"}</p>
-        <p><strong>Chess Type:</strong> ${ChessType}</p>
+        <p><strong>Chess Type:</strong> ${classtype}</p>
         <p><strong>Date:</strong> ${preferredDate || "N/A"}</p>
         <p><strong>Message:</strong> ${message || "N/A"}</p>
       `,
