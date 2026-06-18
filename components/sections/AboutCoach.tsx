@@ -28,18 +28,18 @@ export default function AboutCoach() {
             <h2 className="text-4xl font-bold text-white mb-4">
               Meet Your <span className="text-[#f5a623]">Coach</span>
             </h2>
-            <h3 className="text-xl text-white/80 mb-4">Rahul Sharma</h3>
+            <h3 className="text-xl text-white/80 mb-4">Rajat Yadav</h3>
             <p className="text-white/60 mb-6 leading-relaxed">
-              Passionate chess coach with 8+ years of teaching experience. 
-              State-level player turned full-time coach. Trained over 500 students 
+              Passionate chess coach with 15+ years of teaching experience. 
+              State-level player turned full-time coach. Trained over 200 students 
               across all age groups. Believes in making chess fun and accessible 
               for everyone.
             </p>
             <div className="grid grid-cols-3 gap-4">
               {[
-                { icon: Trophy, label: "State Player" },
-                { icon: Award, label: "8+ Years Exp" },
-                { icon: GraduationCap, label: "500+ Students" },
+                { icon: Trophy, label: "International FIDE Rated" },
+                { icon: Award, label: "15+ Years Exp" },
+                { icon: GraduationCap, label: "200+ Students" },
               ].map((item) => (
                 <div key={item.label} className="text-center">
                   <item.icon className="w-6 h-6 text-[#f5a623] mx-auto mb-2" />
