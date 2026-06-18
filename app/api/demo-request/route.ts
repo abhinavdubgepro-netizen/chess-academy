@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Insert into database (this will also fail if unique constraint is violated)
+    // Insert into database
     await db.insert(demoRequests).values({
       name,
       email: normalizedEmail,
@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
       message: message || null,
     });
 
-    // Optional: still send to Google Sheets for backup
+    // Optional: backup to Google Sheets
     try {
       await fetch("https://script.google.com/macros/s/AKfycbw14cV-X6Sulkh7HeZAEVEpq78OAsSZevrOJNeiRCLbm0vU1qoTIZCjh8A9k_lBZPBceQ/exec", {
         method: "POST",
@@ -58,7 +58,6 @@ export async function POST(req: NextRequest) {
       });
     } catch (sheetError) {
       console.error("Google Sheet backup failed:", sheetError);
-      // Don't fail the request if sheet backup fails
     }
 
     return NextResponse.json(
@@ -69,7 +68,7 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     console.error("Error:", error);
     
-    // Handle unique constraint violation from database
+    // Handle unique constraint violation
     if (error instanceof Error && error.message.includes("UNIQUE constraint failed")) {
       return NextResponse.json(
         { message: "You have already requested a demo with this email." },
