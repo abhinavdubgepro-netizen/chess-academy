@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Redis } from "@upstash/redis";
 
-const demoEmails = new Set<string>();
+const redis = new Redis({
+  url: process.env.UPSTASH_REDIS_REST_URL!,
+  token: process.env.UPSTASH_REDIS_REST_TOKEN!,
+});
 
 export async function POST(req: NextRequest) {
   try {
@@ -16,14 +20,37 @@ export async function POST(req: NextRequest) {
 
     const normalizedEmail = email.toLowerCase().trim();
 
-    if (demoEmails.has(normalizedEmail)) {
+    // Check Redis if email already requested demo
+    const key = `demo:${normalizedEmail}`;
+    const existing = await redis.get(key);
+
+    if (existing === "true") {
       return NextResponse.json(
         { message: "You have already requested a demo with this email." },
         { status: 409 }
       );
     }
 
-    demoEmails.add(normalizedEmail);
+    // Save to Redis (persists forever)
+    await redis.set(key, "true");
+
+    // Also save to Google Sheets (optional backup)
+    try {
+      await fetch("https://script.google.com/macros/s/AKfycbw14cV-X6Sulkh7HeZAEVEpq78OAsSZevrOJNeiRCLbm0vU1qoTIZCjh8A9k_lBZPBceQ/exec", {
+        method: "POST",
+        body: JSON.stringify({
+          name,
+          email: normalizedEmail,
+          phone,
+          age,
+          level: chessLevel,
+          date: preferredDate,
+          message,
+        }),
+      });
+    } catch (sheetError) {
+      console.error("Google Sheet backup failed:", sheetError);
+    }
 
     return NextResponse.json(
       { message: "Demo request submitted successfully!" },
@@ -33,7 +60,7 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     console.error("Error:", error);
     return NextResponse.json(
-      { message: `Server error: ${error instanceof Error ? error.message : "Unknown"}` },
+      { message: "Something went wrong" },
       { status: 500 }
     );
   }
