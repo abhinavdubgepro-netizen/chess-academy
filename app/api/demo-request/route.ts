@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/db";
-import { demoRequests } from "@/db/schema";
-import { eq } from "drizzle-orm";
+
+// In-memory store for demo emails (resets on server restart)
+const demoEmails = new Set<string>();
 
 export async function POST(req: NextRequest) {
   try {
@@ -17,47 +17,48 @@ export async function POST(req: NextRequest) {
 
     const normalizedEmail = email.toLowerCase().trim();
 
-    // Check if email already exists in database
-    const existing = await db
-      .select()
-      .from(demoRequests)
-      .where(eq(demoRequests.email, normalizedEmail))
-      .limit(1);
-
-    if (existing.length > 0) {
+    // Check if email already requested a demo
+    if (demoEmails.has(normalizedEmail)) {
       return NextResponse.json(
         { message: "You have already requested a demo with this email." },
         { status: 409 }
       );
     }
 
-    // Insert into database
-    await db.insert(demoRequests).values({
-      name,
-      email: normalizedEmail,
-      phone: phone || null,
-      age: age ? parseInt(age) : null,
-      chessLevel: chessLevel || "beginner",
-      preferredDate: preferredDate || null,
-      message: message || null,
+    // Mark email as used
+    demoEmails.add(normalizedEmail);
+
+    // Send to Google Sheets
+    const response = await fetch("https://script.google.com/macros/s/AKfycbw14cV-X6Sulkh7HeZAEVEpq78OAsSZevrOJNeiRCLbm0vU1qoTIZCjh8A9k_lBZPBceQ/exec", {
+      method: "POST",
+      body: JSON.stringify({
+        name,
+        email: normalizedEmail,
+        phone,
+        age,
+        level: chessLevel,
+        date: preferredDate,
+        message,
+      }),
     });
 
-    // Optional: backup to Google Sheets
+    // Handle non-JSON responses from Apps Script
+    const text = await response.text();
+    let data;
     try {
-      await fetch("https://script.google.com/macros/s/AKfycbw14cV-X6Sulkh7HeZAEVEpq78OAsSZevrOJNeiRCLbm0vU1qoTIZCjh8A9k_lBZPBceQ/exec", {
-        method: "POST",
-        body: JSON.stringify({
-          name,
-          email: normalizedEmail,
-          phone,
-          age,
-          level: chessLevel,
-          date: preferredDate,
-          message,
-        }),
-      });
-    } catch (sheetError) {
-      console.error("Google Sheet backup failed:", sheetError);
+      data = JSON.parse(text);
+    } catch {
+      // If Apps Script doesn't return JSON, assume success if HTTP 200
+      data = { success: response.ok };
+    }
+
+    if (!data.success && response.ok === false) {
+      // Remove from set if Google Sheets failed
+      demoEmails.delete(normalizedEmail);
+      return NextResponse.json(
+        { message: "Failed to save request. Please try again." },
+        { status: 502 }
+      );
     }
 
     return NextResponse.json(
@@ -67,15 +68,6 @@ export async function POST(req: NextRequest) {
 
   } catch (error) {
     console.error("Error:", error);
-    
-    // Handle unique constraint violation
-    if (error instanceof Error && error.message.includes("UNIQUE constraint failed")) {
-      return NextResponse.json(
-        { message: "You have already requested a demo with this email." },
-        { status: 409 }
-      );
-    }
-
     return NextResponse.json(
       { message: "Something went wrong" },
       { status: 500 }
