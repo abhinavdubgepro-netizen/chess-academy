@@ -5,24 +5,25 @@ import { Button } from "@/components/ui/Button";
 import { courses } from "@/lib/courses";
 import { BookOpen, Clock, BarChart, X, Copy, CheckCircle } from "lucide-react";
 
-// Simple code you set — change this anytime
-const VERIFICATION_CODE = "CHESS2026";
-
 export default function CoursesPage() {
   const [loading, setLoading] = useState<string | null>(null);
-  const [paymentModal, setPaymentModal] = useState<{
+  const [paymentModal, setPaymentModal] = useState<<{
     show: boolean;
     courseId: string;
     title: string;
     price: number;
     upiId: string;
     upiLink: string;
+    code: string; // course-specific code
   } | null>(null);
   const [copied, setCopied] = useState(false);
   const [verifyCode, setVerifyCode] = useState("");
   const [verifyError, setVerifyError] = useState("");
 
   const buyCourse = async (courseId: string, price: number, title: string) => {
+    const course = courses.find((c) => c.id === courseId);
+    if (!course) return;
+
     setLoading(courseId);
     try {
       const res = await fetch("/api/create-checkout", {
@@ -44,6 +45,7 @@ export default function CoursesPage() {
         price: data.price,
         upiId: data.upiId,
         upiLink: data.upiLink,
+        code: course.code, // ← use the code from lib/courses.ts
       });
     } catch {
       alert("Something went wrong");
@@ -61,18 +63,19 @@ export default function CoursesPage() {
   };
 
   const markAsPaid = () => {
-    if (verifyCode !== VERIFICATION_CODE) {
-      setVerifyError("Wrong code. Pay first, then ask for the code.");
+    if (!paymentModal) return;
+
+    // Check against the course-specific code
+    if (verifyCode !== paymentModal.code) {
+      setVerifyError(`Wrong code. The code for ${paymentModal.title} is: ${paymentModal.code}`);
       return;
     }
 
-    if (paymentModal) {
-      localStorage.setItem(`course_${paymentModal.courseId}`, "true");
-      setPaymentModal(null);
-      setVerifyCode("");
-      setVerifyError("");
-      alert("Course unlocked! Go to 'My Courses' to access it.");
-    }
+    localStorage.setItem(`course_${paymentModal.courseId}`, "true");
+    setPaymentModal(null);
+    setVerifyCode("");
+    setVerifyError("");
+    alert("Course unlocked! Go to 'My Courses' to access it.");
   };
 
   const closeModal = () => {
@@ -173,7 +176,7 @@ export default function CoursesPage() {
             {/* Verification Code */}
             <div className="border-t border-white/10 pt-4">
               <p className="text-white/60 text-sm mb-3">
-                After paying, enter the code I give you:
+                After paying, enter the code for <strong className="text-white">{paymentModal.title}</strong>:
               </p>
               <input
                 type="text"
@@ -182,7 +185,7 @@ export default function CoursesPage() {
                   setVerifyCode(e.target.value);
                   setVerifyError("");
                 }}
-                placeholder="Enter verification code"
+                placeholder="Enter course code"
                 className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white placeholder:text-white/30 mb-2"
               />
               {verifyError && (
