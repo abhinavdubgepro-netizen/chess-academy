@@ -18,9 +18,9 @@ export async function POST(req: NextRequest) {
       courseId,
       price,
       // UPI ID for payment
-      upiId: "abhinavdubge@slc", // CHANGE THIS TO YOUR REAL UPI ID
+      upiId: "SITE ON TEST DONT PAY", // CHANGE THIS TO YOUR REAL UPI ID
       // QR code data for desktop users
-      upiLink: `upi://pay?pa=yourupi@okaxis&pn=Chess Academy&am=${price}&cu=INR&tn=Course: ${courseId}`,
+      upiLink: `SITE O TEST DONT PAY=${price}&cu=INR&tn=Course: ${courseId}`,
     });
 
   } catch (error) {
