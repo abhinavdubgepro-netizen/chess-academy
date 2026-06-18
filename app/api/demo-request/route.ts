@@ -11,9 +11,6 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { name, email, phone, age, chessLevel, preferredDate, message } = body;
 
-    console.log("=== DEMO REQUEST ===");
-    console.log("Received email:", email);
-
     if (!email || !email.includes("@")) {
       return NextResponse.json(
         { message: "Valid email is required" },
@@ -24,41 +21,45 @@ export async function POST(req: NextRequest) {
     const normalizedEmail = email.toLowerCase().trim();
     const key = `demo:${normalizedEmail}`;
 
-    console.log("Checking Redis key:", key);
-
-    // Check Redis - try/catch to see if Redis fails
-    let existing;
-    try {
-      existing = await redis.get(key);
-      console.log("Redis GET result:", existing);
-    } catch (redisError) {
-      console.error("Redis GET failed:", redisError);
-      return NextResponse.json(
-        { message: "Database error checking duplicate" },
-        { status: 500 }
-      );
-    }
+    // Check Redis if email already requested demo
+    const existing = await redis.get(key);
 
     if (existing === "true") {
-      console.log("DUPLICATE FOUND - returning 409");
       return NextResponse.json(
         { message: "You have already requested a demo with this email." },
         { status: 409 }
       );
     }
 
-    console.log("No duplicate found, saving to Redis...");
+    // Save to Redis (persists forever)
+    await redis.set(key, "true");
 
-    // Save to Redis
+    // ALSO send email notification (this was missing!)
     try {
-      await redis.set(key, "true");
-      console.log("Redis SET success");
-    } catch (redisSetError) {
-      console.error("Redis SET failed:", redisSetError);
-      return NextResponse.json(
-        { message: "Database error saving request" },
-        { status: 500 }
-      );
+      await fetch("https://script.google.com/macros/s/AKfycbw14cV-X6Sulkh7HeZAEVEpq78OAsSZevrOJNeiRCLbm0vU1qoTIZCjh8A9k_lBZPBceQ/exec", {
+        method: "POST",
+        body: JSON.stringify({
+          name,
+          email: normalizedEmail,
+          phone,
+          age,
+          level: chessLevel,
+          date: preferredDate,
+          message,
+        }),
+      });
+    } catch (sheetError) {
+      console.error("Google Sheet backup failed:", sheetError);
+      // Don't fail if email fails, but log it
+    }
+
+    // ALSO send to your email service (Resend/SendGrid/etc)
+    // If you have a separate email API, call it here too
+    try {
+      // If you have another email endpoint, add it here
+      // await fetch("/api/send-email", { ... });
+    } catch (emailError) {
+      console.error("Email send failed:", emailError);
     }
 
     return NextResponse.json(
@@ -67,7 +68,7 @@ export async function POST(req: NextRequest) {
     );
 
   } catch (error) {
-    console.error("API Error:", error);
+    console.error("Error:", error);
     return NextResponse.json(
       { message: "Something went wrong" },
       { status: 500 }
