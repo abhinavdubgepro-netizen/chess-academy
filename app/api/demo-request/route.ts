@@ -1,30 +1,64 @@
 import { NextRequest, NextResponse } from "next/server";
+import { db } from "@/db";
+import { demoRequests } from "@/db/schema";
+import { eq } from "drizzle-orm";
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const { name, email, phone, age, chessLevel, preferredDate, message } = body;
 
-    const response = await fetch("https://script.google.com/macros/s/AKfycbw14cV-X6Sulkh7HeZAEVEpq78OAsSZevrOJNeiRCLbm0vU1qoTIZCjh8A9k_lBZPBceQ/exec", {
-      method: "POST",
-      body: JSON.stringify({
-        name,
-        email,
-        phone,
-        age,
-        level: chessLevel,
-        date: preferredDate,
-        message,
-      }),
-    });
+    if (!email || !email.includes("@")) {
+      return NextResponse.json(
+        { message: "Valid email is required" },
+        { status: 400 }
+      );
+    }
 
-    const data = await response.json();
+    const normalizedEmail = email.toLowerCase().trim();
 
-    if (!data.success) {
+    // Check if email already exists in database
+    const existing = await db
+      .select()
+      .from(demoRequests)
+      .where(eq(demoRequests.email, normalizedEmail))
+      .limit(1);
+
+    if (existing.length > 0) {
       return NextResponse.json(
         { message: "You have already requested a demo with this email." },
         { status: 409 }
       );
+    }
+
+    // Insert into database (this will also fail if unique constraint is violated)
+    await db.insert(demoRequests).values({
+      name,
+      email: normalizedEmail,
+      phone: phone || null,
+      age: age ? parseInt(age) : null,
+      chessLevel: chessLevel || "beginner",
+      preferredDate: preferredDate || null,
+      message: message || null,
+    });
+
+    // Optional: still send to Google Sheets for backup
+    try {
+      await fetch("https://script.google.com/macros/s/AKfycbw14cV-X6Sulkh7HeZAEVEpq78OAsSZevrOJNeiRCLbm0vU1qoTIZCjh8A9k_lBZPBceQ/exec", {
+        method: "POST",
+        body: JSON.stringify({
+          name,
+          email: normalizedEmail,
+          phone,
+          age,
+          level: chessLevel,
+          date: preferredDate,
+          message,
+        }),
+      });
+    } catch (sheetError) {
+      console.error("Google Sheet backup failed:", sheetError);
+      // Don't fail the request if sheet backup fails
     }
 
     return NextResponse.json(
@@ -34,6 +68,15 @@ export async function POST(req: NextRequest) {
 
   } catch (error) {
     console.error("Error:", error);
+    
+    // Handle unique constraint violation from database
+    if (error instanceof Error && error.message.includes("UNIQUE constraint failed")) {
+      return NextResponse.json(
+        { message: "You have already requested a demo with this email." },
+        { status: 409 }
+      );
+    }
+
     return NextResponse.json(
       { message: "Something went wrong" },
       { status: 500 }
