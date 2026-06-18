@@ -72,7 +72,7 @@ export default function Hero() {
         >
           {[
             { value: "200+", label: "Students Trained" },
-            { value: "10+ Years", label: "Teaching Experience" },
+            { value: "15+ Years", label: "Teaching Experience" },
             { value: "2", label: "Batches Running" },
             { value: "100%", label: "Satisfaction" },
           ].map((stat, i) => (
