@@ -5,6 +5,9 @@ import { Button } from "@/components/ui/Button";
 import { courses } from "@/lib/courses";
 import { BookOpen, Clock, BarChart, X, Copy, CheckCircle } from "lucide-react";
 
+// Simple code you set — change this anytime
+const VERIFICATION_CODE = "CHESS2026";
+
 export default function CoursesPage() {
   const [loading, setLoading] = useState<string | null>(null);
   const [paymentModal, setPaymentModal] = useState<{
@@ -16,6 +19,8 @@ export default function CoursesPage() {
     upiLink: string;
   } | null>(null);
   const [copied, setCopied] = useState(false);
+  const [verifyCode, setVerifyCode] = useState("");
+  const [verifyError, setVerifyError] = useState("");
 
   const buyCourse = async (courseId: string, price: number, title: string) => {
     setLoading(courseId);
@@ -32,7 +37,6 @@ export default function CoursesPage() {
         return;
       }
 
-      // Show payment modal instead of redirecting
       setPaymentModal({
         show: true,
         courseId,
@@ -57,12 +61,24 @@ export default function CoursesPage() {
   };
 
   const markAsPaid = () => {
-    // Store in localStorage that user "paid" (for demo purposes)
+    if (verifyCode !== VERIFICATION_CODE) {
+      setVerifyError("Wrong code. Pay first, then ask for the code.");
+      return;
+    }
+
     if (paymentModal) {
       localStorage.setItem(`course_${paymentModal.courseId}`, "true");
       setPaymentModal(null);
+      setVerifyCode("");
+      setVerifyError("");
       alert("Course unlocked! Go to 'My Courses' to access it.");
     }
+  };
+
+  const closeModal = () => {
+    setPaymentModal(null);
+    setVerifyCode("");
+    setVerifyError("");
   };
 
   return (
@@ -119,7 +135,7 @@ export default function CoursesPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
           <div className="bg-[#1a1a2e] border border-white/10 rounded-xl p-6 max-w-md w-full relative">
             <button
-              onClick={() => setPaymentModal(null)}
+              onClick={closeModal}
               className="absolute top-4 right-4 text-white/50 hover:text-white"
             >
               <X className="w-5 h-5" />
@@ -132,7 +148,7 @@ export default function CoursesPage() {
 
             {/* UPI ID */}
             <div className="bg-white/5 rounded-lg p-4 mb-4">
-              <p className="text-sm text-white/60 mb-2">Pay via UPI</p>
+              <p className="text-sm text-white/60 mb-2">Pay via UPI to:</p>
               <div className="flex items-center gap-2">
                 <code className="flex-1 bg-black/30 rounded px-3 py-2 text-amber-400 text-sm font-mono">
                   {paymentModal.upiId}
@@ -154,27 +170,28 @@ export default function CoursesPage() {
               Open UPI App (Mobile Only)
             </a>
 
-            {/* QR Code placeholder */}
-            <div className="bg-white rounded-lg p-4 mb-4 text-center">
-              <p className="text-black/60 text-sm mb-2">Scan with any UPI app</p>
-              <div className="w-48 h-48 bg-gray-200 mx-auto flex items-center justify-center text-black/40 text-xs">
-                QR Code Placeholder
-                <br />
-                (Use any QR generator)
-              </div>
+            {/* Verification Code */}
+            <div className="border-t border-white/10 pt-4">
+              <p className="text-white/60 text-sm mb-3">
+                After paying, enter the code I give you:
+              </p>
+              <input
+                type="text"
+                value={verifyCode}
+                onChange={(e) => {
+                  setVerifyCode(e.target.value);
+                  setVerifyError("");
+                }}
+                placeholder="Enter verification code"
+                className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white placeholder:text-white/30 mb-2"
+              />
+              {verifyError && (
+                <p className="text-red-400 text-sm mb-3">{verifyError}</p>
+              )}
+              <Button onClick={markAsPaid} className="w-full">
+                Verify & Unlock Course
+              </Button>
             </div>
-
-            {/* Manual confirmation */}
-            <p className="text-white/40 text-xs text-center mb-4">
-              After payment, click below to unlock course
-            </p>
-            <Button
-              onClick={markAsPaid}
-              variant="outline"
-              className="w-full"
-            >
-              I've Paid — Unlock Course
-            </Button>
           </div>
         </div>
       )}
