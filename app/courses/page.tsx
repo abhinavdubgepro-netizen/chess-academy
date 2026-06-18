@@ -63,20 +63,19 @@ export default function CoursesPage() {
   };
 
   const markAsPaid = () => {
-    if (!paymentModal) return;
+  if (!paymentModal) return;
 
-    // Check against the course-specific code
-    if (verifyCode !== paymentModal.code) {
-      setVerifyError(`Wrong code. The code for ${paymentModal.title} is: ${paymentModal.code}`);
-      return;
-    }
+  if (verifyCode !== paymentModal.code) {
+    setVerifyError("Wrong code. Pay first, then ask for the code."); // ← don't reveal the code
+    return;
+  }
 
-    localStorage.setItem(`course_${paymentModal.courseId}`, "true");
-    setPaymentModal(null);
-    setVerifyCode("");
-    setVerifyError("");
-    alert("Course unlocked! Go to 'My Courses' to access it.");
-  };
+  localStorage.setItem(`course_${paymentModal.courseId}`, "true");
+  setPaymentModal(null);
+  setVerifyCode("");
+  setVerifyError("");
+  alert("Course unlocked! Go to 'My Courses' to access it.");
+};
 
   const closeModal = () => {
     setPaymentModal(null);
