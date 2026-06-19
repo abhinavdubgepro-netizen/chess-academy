@@ -74,7 +74,6 @@ export default function CoursesPage() {
       return;
     }
 
-    // Save to server (Redis) — PERSISTS FOREVER
     try {
       await fetch("/api/purchases", {
         method: "POST",
@@ -85,7 +84,6 @@ export default function CoursesPage() {
         }),
       });
 
-      // Also save to localStorage for quick access
       localStorage.setItem("user_email", userEmail);
       localStorage.setItem(`course_${paymentModal.courseId}`, "true");
 
@@ -114,31 +112,40 @@ export default function CoursesPage() {
           <p className="text-white/60">Master the game with our structured programs</p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-6">
-          {courses.map((course) => (
-            <div
-              key={course.id}
-              className="bg-white/5 border border-white/10 rounded-xl p-6 hover:bg-white/10 transition"
-            >
-              <div className="flex items-center gap-2 mb-4">
-                <BookOpen className="w-5 h-5 text-amber-400" />
-                <span className="text-sm text-amber-400 font-medium capitalize">{course.level}</span>
+        {courses.length === 0 ? (
+          <div className="text-center py-20">
+            <BookOpen className="w-20 h-20 text-white/20 mx-auto mb-6" />
+            <h2 className="text-2xl font-bold text-white mb-3">No Courses Available</h2>
+            <p className="text-white/50 mb-6">Courses are being prepared. Check back soon!</p>
+            <p className="text-white/40 text-sm">Contact us for early access or demo classes.</p>
+          </div>
+        ) : (
+          <div className="grid md:grid-cols-3 gap-6">
+            {courses.map((course) => (
+              <div
+                key={course.id}
+                className="bg-white/5 border border-white/10 rounded-xl p-6 hover:bg-white/10 transition"
+              >
+                <div className="flex items-center gap-2 mb-4">
+                  <BookOpen className="w-5 h-5 text-amber-400" />
+                  <span className="text-sm text-amber-400 font-medium capitalize">{course.level}</span>
+                </div>
+                <h3 className="text-xl font-bold text-white mb-2">{course.title}</h3>
+                <p className="text-white/60 text-sm mb-4">{course.description}</p>
+                <div className="flex gap-4 text-sm text-white/50 mb-6">
+                  <span className="flex items-center gap-1"><Clock className="w-4 h-4" />{course.duration}</span>
+                  <span className="flex items-center gap-1"><BarChart className="w-4 h-4" />{course.lessons} lessons</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-2xl font-bold text-white">₹{course.price}</span>
+                  <Button onClick={() => buyCourse(course.id, course.price, course.title)} disabled={loading === course.id}>
+                    {loading === course.id ? "Loading..." : "Buy Now"}
+                  </Button>
+                </div>
               </div>
-              <h3 className="text-xl font-bold text-white mb-2">{course.title}</h3>
-              <p className="text-white/60 text-sm mb-4">{course.description}</p>
-              <div className="flex gap-4 text-sm text-white/50 mb-6">
-                <span className="flex items-center gap-1"><Clock className="w-4 h-4" />{course.duration}</span>
-                <span className="flex items-center gap-1"><BarChart className="w-4 h-4" />{course.lessons} lessons</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-2xl font-bold text-white">₹{course.price}</span>
-                <Button onClick={() => buyCourse(course.id, course.price, course.title)} disabled={loading === course.id}>
-                  {loading === course.id ? "Loading..." : "Buy Now"}
-                </Button>
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Payment Modal */}
@@ -154,7 +161,6 @@ export default function CoursesPage() {
               Pay ₹{paymentModal.price} for <strong className="text-white">{paymentModal.title}</strong>
             </p>
 
-            {/* UPI ID */}
             <div className="bg-white/5 rounded-lg p-4 mb-4">
               <p className="text-sm text-white/60 mb-2">Pay via UPI to:</p>
               <div className="flex items-center gap-2">
@@ -169,7 +175,6 @@ export default function CoursesPage() {
               Open UPI App (Mobile Only)
             </a>
 
-            {/* Email + Verification */}
             <div className="border-t border-white/10 pt-4">
               <p className="text-white/60 text-sm mb-3">Enter your email (for permanent access):</p>
               <input
