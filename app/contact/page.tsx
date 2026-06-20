@@ -95,7 +95,7 @@ export default function ContactPage() {
           >
             {[
               { icon: Mail, label: "Email", value: "hello@chessacademy.com", id: "email" },
-              { icon: Phone, label: "Phone", value: "+91 98765 43210", id: "phone" },
+              { icon: Phone, label: "Phone", value: "+91 877 077 7638", id: "phone" },
               { icon: MapPin, label: "Location", value: "Online Classes (India)", id: "location" },
             ].map((item) => (
               <div
