@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
@@ -20,68 +20,37 @@ export default function DemoPage() {
     message: "",
   });
   
-  // Verification states
-  const [verificationStep, setVerificationStep] = useState<"form" | "verify" | "verified">("form");
-  const [verificationCode, setVerificationCode] = useState("");
-  const [verifyError, setVerifyError] = useState("");
-  const [sendingCode, setSendingCode] = useState(false);
+  // Math captcha
+  const [num1, setNum1] = useState(0);
+  const [num2, setNum2] = useState(0);
+  const [userAnswer, setUserAnswer] = useState("");
+  const [mathVerified, setMathVerified] = useState(false);
+
+  useEffect(() => {
+    setNum1(Math.floor(Math.random() * 10) + 1);
+    setNum2(Math.floor(Math.random() * 10) + 1);
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const sendVerificationCode = async () => {
-    if (!formData.email || !formData.email.includes("@")) {
-      setErrorMsg("Enter a valid email first");
-      return;
-    }
-    
-    setSendingCode(true);
-    try {
-      const res = await fetch("/api/send-verification", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: formData.email }),
-      });
-      
-      if (res.ok) {
-        setVerificationStep("verify");
-        setErrorMsg("");
-      } else {
-        setErrorMsg("Failed to send verification code");
-      }
-    } catch {
-      setErrorMsg("Network error");
-    } finally {
-      setSendingCode(false);
-    }
-  };
-
-  const verifyCode = async () => {
-    if (!verificationCode) {
-      setVerifyError("Enter the code");
-      return;
-    }
-    
-    try {
-      const res = await fetch(`/api/send-verification?email=${encodeURIComponent(formData.email)}&code=${verificationCode}`);
-      const data = await res.json();
-      
-      if (data.valid) {
-        setVerificationStep("verified");
-        setVerifyError("");
-      } else {
-        setVerifyError("Invalid code. Try again.");
-      }
-    } catch {
-      setVerifyError("Verification failed");
+  const checkMathAnswer = () => {
+    const correct = num1 + num2;
+    if (parseInt(userAnswer) === correct) {
+      setMathVerified(true);
+      setErrorMsg("");
+    } else {
+      setErrorMsg(`Wrong answer. Try again: ${num1} + ${num2} = ?`);
+      setUserAnswer("");
     }
   };
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (verificationStep !== "verified") {
-      setErrorMsg("Please verify your email first");
+    
+    if (!mathVerified) {
+      setErrorMsg("Please solve the math problem first");
       return;
     }
     
@@ -118,6 +87,15 @@ export default function DemoPage() {
     }
   };
 
+  const resetForm = () => {
+    setStatus("idle");
+    setMathVerified(false);
+    setUserAnswer("");
+    setNum1(Math.floor(Math.random() * 10) + 1);
+    setNum2(Math.floor(Math.random() * 10) + 1);
+    setFormData({ name: "", email: "", phone: "", age: "", classType: "1-on-1", preferredDate: "", message: "" });
+  };
+
   return (
     <div className="min-h-screen pt-24 pb-16 px-4">
       <div className="max-w-2xl mx-auto">
@@ -132,7 +110,7 @@ export default function DemoPage() {
               <CheckCircle className="w-16 h-16 text-green-400 mx-auto mb-4" />
               <h3 className="text-xl font-semibold text-white mb-2">Request Submitted!</h3>
               <p className="text-white/60 mb-6">We will contact you within 24 hours.</p>
-              <Button onClick={() => { setStatus("idle"); setVerificationStep("form"); setFormData({ name: "", email: "", phone: "", age: "", classType: "1-on-1", preferredDate: "", message: "" }); }} variant="outline">Submit Another</Button>
+              <Button onClick={resetForm} variant="outline">Submit Another</Button>
             </div>
           ) : status === "already-exists" ? (
             <div className="text-center py-8">
@@ -148,71 +126,53 @@ export default function DemoPage() {
                 </div>
               )}
               
-              {/* Email with verification */}
-              <div>
-                <label className="block text-sm text-white/80 mb-1">Email *</label>
-                <div className="flex gap-2">
-                  <Input 
-                    name="email" 
-                    type="email" 
-                    value={formData.email} 
-                    onChange={handleChange} 
-                    placeholder="your@email.com" 
-                    required 
-                    disabled={verificationStep === "verified"}
-                    className="flex-1"
-                  />
-                  {verificationStep === "form" && (
-                    <Button type="button" onClick={sendVerificationCode} disabled={sendingCode}>
-                      {sendingCode ? "Sending..." : "Verify"}
-                    </Button>
-                  )}
-                  {verificationStep === "verified" && (
-                    <span className="px-3 py-2 bg-green-500/20 text-green-400 rounded-lg text-sm flex items-center">
-                      <CheckCircle className="w-4 h-4 mr-1" /> Verified
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              {/* Verification code input */}
-              {verificationStep === "verify" && (
+              {/* Math Captcha */}
+              {!mathVerified && (
                 <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4">
-                  <p className="text-amber-400 text-sm mb-2">Enter the 6-digit code sent to {formData.email}</p>
+                  <p className="text-amber-400 text-sm mb-2">Verify you're human: What is {num1} + {num2}?</p>
                   <div className="flex gap-2">
                     <Input
-                      type="text"
-                      value={verificationCode}
-                      onChange={(e) => setVerificationCode(e.target.value)}
-                      placeholder="123456"
-                      maxLength={6}
+                      type="number"
+                      value={userAnswer}
+                      onChange={(e) => setUserAnswer(e.target.value)}
+                      placeholder="Answer"
                       className="flex-1"
                     />
-                    <Button type="button" onClick={verifyCode}>Verify Code</Button>
+                    <Button type="button" onClick={checkMathAnswer}>Verify</Button>
                   </div>
-                  {verifyError && <p className="text-red-400 text-sm mt-2">{verifyError}</p>}
+                </div>
+              )}
+              
+              {mathVerified && (
+                <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-3 text-green-400 text-sm flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4" /> Verified! You can now submit.
                 </div>
               )}
 
               <div>
                 <label className="block text-sm text-white/80 mb-1">Full Name *</label>
-                <Input name="name" value={formData.name} onChange={handleChange} placeholder="Your name" required />
+                <Input name="name" value={formData.name} onChange={handleChange} placeholder="Your name" required disabled={!mathVerified} />
+              </div>
+              
+              <div>
+                <label className="block text-sm text-white/80 mb-1">Email *</label>
+                <Input name="email" type="email" value={formData.email} onChange={handleChange} placeholder="your@email.com" required disabled={!mathVerified} />
               </div>
               
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm text-white/80 mb-1">Phone</label>
-                  <Input name="phone" value={formData.phone} onChange={handleChange} placeholder="+91..." />
+                  <Input name="phone" value={formData.phone} onChange={handleChange} placeholder="+91..." disabled={!mathVerified} />
                 </div>
                 <div>
                   <label className="block text-sm text-white/80 mb-1">Age</label>
-                  <Input name="age" type="number" value={formData.age} onChange={handleChange} placeholder="25" />
+                  <Input name="age" type="number" value={formData.age} onChange={handleChange} placeholder="25" disabled={!mathVerified} />
                 </div>
               </div>
               
               <div>
                 <label className="block text-sm text-white/80 mb-1">Class Type</label>
-                <Select name="classType" value={formData.classType} onChange={handleChange}>
+                <Select name="classType" value={formData.classType} onChange={handleChange} disabled={!mathVerified}>
                   <option value="1-on-1">1-on-1 Personal Training</option>
                   <option value="group">Group Classes</option>
                 </Select>
@@ -220,15 +180,15 @@ export default function DemoPage() {
               
               <div>
                 <label className="block text-sm text-white/80 mb-1">Preferred Date</label>
-                <Input name="preferredDate" type="date" value={formData.preferredDate} onChange={handleChange} />
+                <Input name="preferredDate" type="date" value={formData.preferredDate} onChange={handleChange} disabled={!mathVerified} />
               </div>
               
               <div>
                 <label className="block text-sm text-white/80 mb-1">Message</label>
-                <Textarea name="message" value={formData.message} onChange={handleChange} placeholder="Any questions..." />
+                <Textarea name="message" value={formData.message} onChange={handleChange} placeholder="Any questions..." disabled={!mathVerified} />
               </div>
               
-              <Button type="submit" className="w-full" disabled={status === "loading" || verificationStep !== "verified"}>
+              <Button type="submit" className="w-full" disabled={status === "loading" || !mathVerified}>
                 {status === "loading" ? "Submitting..." : "Request Free Demo"}
               </Button>
             </form>
