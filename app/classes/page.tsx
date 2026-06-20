@@ -71,7 +71,7 @@ export default function ClassesPage() {
                 </div>
               </div>
               <div className="flex items-center justify-between pt-4 border-t border-white/10">
-                <span className="text-2xl font-bold text-[#f5a623]">₹{cls.price}<span className="text-sm text-white/40 font-normal">/month</span></span>
+                <span className="text-2xl font-bold text-[#f5a623]">₹{cls.price}<span className="text-sm text-white/40 font-normal">{cls.type === "1-on-1" ? "/hour" : "/month"}</span></span>
                 <Link href="/demo">
                   <Button variant="outline" size="sm">Book Demo</Button>
                 </Link>
