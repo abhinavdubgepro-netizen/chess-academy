@@ -10,7 +10,7 @@ const classes = [
     description: "Personalized one-on-one chess coaching tailored to your skill level and goals.",
     type: "1-on-1",
     duration: "Flexible",
-    price: 1500,
+    price: 100,
     maxStudents: 1,
   },
   {
