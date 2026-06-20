@@ -10,7 +10,7 @@ const classes = [
     description: "Personalized one-on-one chess coaching tailored to your skill level and goals. Get individual attention, custom lesson plans, and rapid improvement with dedicated coach time.",
     type: "1-on-1",
     duration: "Flexible",
-    price: 1500,
+    price: 100,
     schedule: "Book as per your convenience",
     maxStudents: 1,
   },
@@ -22,7 +22,7 @@ const classes = [
     type: "group",
     duration: "8 Weeks",
     price: 2000,
-    schedule: "Mon & Wed, 5:00 PM - 6:00 PM",
+    schedule: "Mon Wed Fri Sat Sun, 6:15 PM - 7:30 PM",
     maxStudents: 12,
   },
 ];
