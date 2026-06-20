@@ -15,33 +15,82 @@ export default function DemoPage() {
     email: "",
     phone: "",
     age: "",
-    classType: "1-on-1", // Changed from chessLevel
+    classType: "1-on-1",
     preferredDate: "",
     message: "",
   });
+  
+  // Verification states
+  const [verificationStep, setVerificationStep] = useState<"form" | "verify" | "verified">("form");
+  const [verificationCode, setVerificationCode] = useState("");
+  const [verifyError, setVerifyError] = useState("");
+  const [sendingCode, setSendingCode] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  const sendVerificationCode = async () => {
+    if (!formData.email || !formData.email.includes("@")) {
+      setErrorMsg("Enter a valid email first");
+      return;
+    }
+    
+    setSendingCode(true);
+    try {
+      const res = await fetch("/api/send-verification", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: formData.email }),
+      });
+      
+      if (res.ok) {
+        setVerificationStep("verify");
+        setErrorMsg("");
+      } else {
+        setErrorMsg("Failed to send verification code");
+      }
+    } catch {
+      setErrorMsg("Network error");
+    } finally {
+      setSendingCode(false);
+    }
+  };
+
+  const verifyCode = async () => {
+    if (!verificationCode) {
+      setVerifyError("Enter the code");
+      return;
+    }
+    
+    try {
+      const res = await fetch(`/api/send-verification?email=${encodeURIComponent(formData.email)}&code=${verificationCode}`);
+      const data = await res.json();
+      
+      if (data.valid) {
+        setVerificationStep("verified");
+        setVerifyError("");
+      } else {
+        setVerifyError("Invalid code. Try again.");
+      }
+    } catch {
+      setVerifyError("Verification failed");
+    }
+  };
+
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setStatus("loading");
-    setErrorMsg("");
+    if (verificationStep !== "verified") {
+      setErrorMsg("Please verify your email first");
+      return;
+    }
     
+    setStatus("loading");
     try {
       const res = await fetch("/api/demo-request", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: formData.name,
-          email: formData.email,
-          phone: formData.phone,
-          age: formData.age,
-          classType: formData.classType, // Changed from chessLevel
-          preferredDate: formData.preferredDate,
-          message: formData.message,
-        }),
+        body: JSON.stringify(formData),
       });
 
       let data;
@@ -58,15 +107,14 @@ export default function DemoPage() {
 
       if (!res.ok) {
         setStatus("error");
-        setErrorMsg(data.message || `Error ${res.status}: Something went wrong`);
+        setErrorMsg(data.message || `Error ${res.status}`);
         return;
       }
 
       setStatus("success");
-
-    } catch (err) {
+    } catch {
       setStatus("error");
-      setErrorMsg("Network error. Check your connection.");
+      setErrorMsg("Network error");
     }
   };
 
@@ -84,7 +132,7 @@ export default function DemoPage() {
               <CheckCircle className="w-16 h-16 text-green-400 mx-auto mb-4" />
               <h3 className="text-xl font-semibold text-white mb-2">Request Submitted!</h3>
               <p className="text-white/60 mb-6">We will contact you within 24 hours.</p>
-              <Button onClick={() => { setStatus("idle"); setFormData({ name: "", email: "", phone: "", age: "", classType: "1-on-1", preferredDate: "", message: "" }); }} variant="outline">Submit Another</Button>
+              <Button onClick={() => { setStatus("idle"); setVerificationStep("form"); setFormData({ name: "", email: "", phone: "", age: "", classType: "1-on-1", preferredDate: "", message: "" }); }} variant="outline">Submit Another</Button>
             </div>
           ) : status === "already-exists" ? (
             <div className="text-center py-8">
@@ -99,14 +147,58 @@ export default function DemoPage() {
                   {errorMsg}
                 </div>
               )}
+              
+              {/* Email with verification */}
+              <div>
+                <label className="block text-sm text-white/80 mb-1">Email *</label>
+                <div className="flex gap-2">
+                  <Input 
+                    name="email" 
+                    type="email" 
+                    value={formData.email} 
+                    onChange={handleChange} 
+                    placeholder="your@email.com" 
+                    required 
+                    disabled={verificationStep === "verified"}
+                    className="flex-1"
+                  />
+                  {verificationStep === "form" && (
+                    <Button type="button" onClick={sendVerificationCode} disabled={sendingCode}>
+                      {sendingCode ? "Sending..." : "Verify"}
+                    </Button>
+                  )}
+                  {verificationStep === "verified" && (
+                    <span className="px-3 py-2 bg-green-500/20 text-green-400 rounded-lg text-sm flex items-center">
+                      <CheckCircle className="w-4 h-4 mr-1" /> Verified
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Verification code input */}
+              {verificationStep === "verify" && (
+                <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4">
+                  <p className="text-amber-400 text-sm mb-2">Enter the 6-digit code sent to {formData.email}</p>
+                  <div className="flex gap-2">
+                    <Input
+                      type="text"
+                      value={verificationCode}
+                      onChange={(e) => setVerificationCode(e.target.value)}
+                      placeholder="123456"
+                      maxLength={6}
+                      className="flex-1"
+                    />
+                    <Button type="button" onClick={verifyCode}>Verify Code</Button>
+                  </div>
+                  {verifyError && <p className="text-red-400 text-sm mt-2">{verifyError}</p>}
+                </div>
+              )}
+
               <div>
                 <label className="block text-sm text-white/80 mb-1">Full Name *</label>
                 <Input name="name" value={formData.name} onChange={handleChange} placeholder="Your name" required />
               </div>
-              <div>
-                <label className="block text-sm text-white/80 mb-1">Email *</label>
-                <Input name="email" type="email" value={formData.email} onChange={handleChange} placeholder="your@email.com" required />
-              </div>
+              
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm text-white/80 mb-1">Phone</label>
@@ -117,6 +209,7 @@ export default function DemoPage() {
                   <Input name="age" type="number" value={formData.age} onChange={handleChange} placeholder="25" />
                 </div>
               </div>
+              
               <div>
                 <label className="block text-sm text-white/80 mb-1">Class Type</label>
                 <Select name="classType" value={formData.classType} onChange={handleChange}>
@@ -124,15 +217,18 @@ export default function DemoPage() {
                   <option value="group">Group Classes</option>
                 </Select>
               </div>
+              
               <div>
                 <label className="block text-sm text-white/80 mb-1">Preferred Date</label>
                 <Input name="preferredDate" type="date" value={formData.preferredDate} onChange={handleChange} />
               </div>
+              
               <div>
                 <label className="block text-sm text-white/80 mb-1">Message</label>
                 <Textarea name="message" value={formData.message} onChange={handleChange} placeholder="Any questions..." />
               </div>
-              <Button type="submit" className="w-full" disabled={status === "loading"}>
+              
+              <Button type="submit" className="w-full" disabled={status === "loading" || verificationStep !== "verified"}>
                 {status === "loading" ? "Submitting..." : "Request Free Demo"}
               </Button>
             </form>
